@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Steven Azevedo
+#
+# Self-hosted Flatpak. A sandbox cannot write to the EFI System Partition, so boot-r-flatpak asks the host to
+# run the installer (flatpak-spawn --host + pkexec). That needs the org.freedesktop.Flatpak permission, which
+# Flathub does not accept, so distribute this as a .flatpak bundle or from your own repository.
+app-id: io.bootr.BootR
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.llvm20
+command: boot-r-flatpak
+finish-args:
+  - --talk-name=org.freedesktop.Flatpak
+modules:
+  - name: boot-r
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/llvm20/bin
+    build-commands:
+      - sh packaging/flatpak/build-efi.sh
+      - install -Dm644 bootR.efi /app/share/boot-r/bootR.efi
+      - install -Dm755 packaging/boot-r-install /app/share/boot-r/boot-r-install
+      - install -Dm755 packaging/flatpak/boot-r-flatpak /app/bin/boot-r-flatpak
+      - install -Dm644 packaging/flatpak/io.bootr.BootR.desktop /app/share/applications/io.bootr.BootR.desktop
+      - install -Dm644 packaging/io.bootr.BootR.metainfo.xml /app/share/metainfo/io.bootr.BootR.metainfo.xml
+      - sed -i 's|<icon type="stock">boot-r</icon>|<icon type="stock">io.bootr.BootR</icon>|' /app/share/metainfo/io.bootr.BootR.metainfo.xml
+      - for n in 16 32 48 64 128 256 512; do install -Dm644 assets/icons/boot-r-$n.png /app/share/icons/hicolor/${n}x${n}/apps/io.bootr.BootR.png; done
+      - install -Dm644 LICENSE /app/share/licenses/io.bootr.BootR/LICENSE
+    sources:
+      - type: dir
+        path: ../..

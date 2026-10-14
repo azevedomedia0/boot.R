@@ -35,3 +35,20 @@ jobs:
         with:
           name: boot-test-screenshot
           path: menu.png
+  flatpak:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: boot-r.flatpak
+          manifest-path: packaging/flatpak/io.bootr.BootR.yml
+          cache-key: flatpak-builder-${{ github.sha }}
+      - name: Check the installed app
+        run: |
+          flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak --user install -y --noninteractive boot-r.flatpak
+          flatpak run --command=sh io.bootr.BootR -c 'file /app/share/boot-r/bootR.efi; ls -l /app/share/boot-r /app/bin; head -c 2 /app/share/boot-r/bootR.efi | od -An -c'

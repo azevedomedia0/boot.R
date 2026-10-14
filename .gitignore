@@ -6,3 +6,6 @@ dist/
 bootR.img
 *.deb
 .DS_Store
+build-flatpak/
+.flatpak-builder/
+*.flatpak

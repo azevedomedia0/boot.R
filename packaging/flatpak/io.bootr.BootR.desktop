@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=boot.R
+GenericName=UEFI Boot Manager
+Comment=Install the boot.R graphical boot manager to this computer's EFI partition
+Exec=boot-r-flatpak --pause
+Icon=io.bootr.BootR
+Terminal=true
+Categories=System;Settings;
+Keywords=boot;bootloader;uefi;efi;dual boot;

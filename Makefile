@@ -46,6 +46,10 @@ $(DEB): bootR.efi tools/mkdeb.py $(wildcard packaging/*) $(wildcard assets/icons
 
 deb: $(DEB)
 
+# Flatpak (self-hosted; needs flatpak-builder on Linux). Builds and installs it for the current user.
+flatpak:
+	flatpak-builder --user --install --install-deps-from=flathub --force-clean build-flatpak packaging/flatpak/io.bootr.BootR.yml
+
 # Fake ESP in ./esp whose "systems" are copies of the menu itself.
 esp: bootR.efi
 	rm -rf esp && mkdir -p esp/EFI/BOOT esp/EFI/ubuntu esp/EFI/Microsoft/Boot esp/EFI/debian esp/EFI/fedora esp/EFI/freebsd esp/EFI/Pop_OS-demo
@@ -63,6 +67,6 @@ demo: esp
 
 clean:
 	rm -f src/*.o assets/*.o bootR.efi
-	rm -rf esp dist bootR.img boot-r_*.deb
+	rm -rf esp dist bootR.img boot-r_*.deb build-flatpak .flatpak-builder
 
-.PHONY: all dist image deb esp demo clean
+.PHONY: all dist image deb flatpak esp demo clean

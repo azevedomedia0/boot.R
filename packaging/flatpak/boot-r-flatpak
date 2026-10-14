@@ -1,0 +1,23 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Steven Azevedo
+# Runs inside the Flatpak sandbox. The sandbox cannot touch the EFI partition, so ask the host to run the
+# real installer as root (through polkit). The host needs efibootmgr and pkexec installed.
+set -u
+pause=0
+for a in "$@"; do [ "$a" = --pause ] && pause=1; done
+fail() {
+  echo "boot-r-flatpak: $*" >&2
+  [ "$pause" = 1 ] && { echo; printf 'Press Enter to close. '; read -r _ || true; }
+  exit 1
+}
+
+app="$(sed -n 's/^app-path=//p' /.flatpak-info 2>/dev/null)"
+[ -n "$app" ] || fail "cannot find where this Flatpak is installed on the host."
+command -v flatpak-spawn >/dev/null || fail "flatpak-spawn is missing."
+flatpak-spawn --host true 2>/dev/null || fail "this Flatpak needs permission to run host commands (org.freedesktop.Flatpak)."
+for tool in pkexec efibootmgr; do
+  flatpak-spawn --host sh -c "command -v $tool" >/dev/null 2>&1 || fail "'$tool' is not installed on the host system. Install it with your package manager."
+done
+
+exec flatpak-spawn --host pkexec env BOOTR_EFI="$app/share/boot-r/bootR.efi" "$app/share/boot-r/boot-r-install" "$@"
