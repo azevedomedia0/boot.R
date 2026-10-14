@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+if [ "$1" = configure ] && [ -z "$2" ]; then
+  echo "boot.R is installed but not active yet."
+  echo "Turn Secure Boot off, then run:  sudo boot-r-install"
+fi
+exit 0

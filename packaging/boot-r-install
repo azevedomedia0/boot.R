@@ -1,0 +1,75 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Steven Azevedo
+# Installs the boot.R boot manager onto this computer's EFI System Partition and makes it the first
+# firmware boot entry. Existing boot entries are left alone. Run with --uninstall to remove it again.
+set -euo pipefail
+
+EFI_SRC="${BOOTR_EFI:-/usr/share/boot-r/bootR.efi}"
+LABEL="boot.R"
+DIR_NAME="bootR"
+mode=install
+esp=""
+
+usage() {
+  cat <<USAGE
+Usage: boot-r-install [--esp MOUNTPOINT] [--uninstall] [--help]
+
+  (no options)   copy boot.R to <ESP>/EFI/$DIR_NAME/ and add it as the first UEFI boot entry
+  --esp PATH     use this mounted EFI System Partition instead of auto-detecting it
+  --uninstall    delete the '$LABEL' boot entry and <ESP>/EFI/$DIR_NAME/
+
+Needs root, a system booted in UEFI mode, and efibootmgr. Secure Boot must be off: boot.R is unsigned.
+USAGE
+}
+
+die() { echo "boot-r-install: $*" >&2; exit 1; }
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --uninstall) mode=uninstall ;;
+    --esp) shift; [ $# -gt 0 ] || die "--esp needs a path"; esp="$1" ;;
+    -h|--help) usage; exit 0 ;;
+    *) usage >&2; exit 2 ;;
+  esac
+  shift
+done
+
+[ "$(id -u)" = 0 ] || die "run as root: sudo boot-r-install"
+[ -d /sys/firmware/efi ] || die "this system was not booted in UEFI mode."
+command -v efibootmgr >/dev/null || die "efibootmgr is not installed."
+
+if [ -z "$esp" ]; then
+  esp="$(findmnt -n -o TARGET -t vfat | grep -E '^/(boot/efi|efi|boot)$' | head -n1 || true)"
+  [ -n "$esp" ] || die "EFI System Partition not mounted. Mount it and pass --esp PATH."
+fi
+[ -d "$esp" ] || die "$esp is not a directory."
+
+# Boot entries we created earlier (Boot0003, Boot000A, ...)
+entries() { efibootmgr | sed -n "s/^Boot\([0-9A-Fa-f]\{4\}\)\*\{0,1\} $LABEL\$/\1/p"; }
+
+if [ "$mode" = uninstall ]; then
+  for n in $(entries); do efibootmgr --delete-bootnum --bootnum "$n" >/dev/null; echo "Removed boot entry Boot$n."; done
+  rm -rf "${esp:?}/EFI/$DIR_NAME"
+  echo "Removed $esp/EFI/$DIR_NAME. Your other boot entries were not touched."
+  exit 0
+fi
+
+[ -f "$EFI_SRC" ] || die "$EFI_SRC not found."
+src="$(findmnt -n -o SOURCE "$esp")" || die "cannot find the device mounted at $esp."
+disk="/dev/$(lsblk -no pkname "$src" | head -n1)"
+part="$(cat "/sys/class/block/$(basename "$src")/partition")"
+
+mkdir -p "$esp/EFI/$DIR_NAME"
+cp "$EFI_SRC" "$esp/EFI/$DIR_NAME/bootR.efi"
+cmp -s "$EFI_SRC" "$esp/EFI/$DIR_NAME/bootR.efi" || die "copy to $esp failed verification."
+sync
+
+if [ -n "$(entries)" ]; then
+  echo "Updated $esp/EFI/$DIR_NAME/bootR.efi. The existing '$LABEL' boot entry was kept."
+else
+  efibootmgr --create --disk "$disk" --part "$part" --label "$LABEL" --loader "\\EFI\\$DIR_NAME\\bootR.efi" >/dev/null
+  echo "Installed. '$LABEL' is now first in the boot order. Your existing entries are untouched."
+fi
+echo "Remove it with: sudo boot-r-install --uninstall"
+echo "Secure Boot: bootR.efi is unsigned. Sign it or enroll its key, or turn Secure Boot off."

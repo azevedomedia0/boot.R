@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.bootr.BootR</id>
+  <name>boot.R</name>
+  <summary>A graphical UEFI boot manager</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <developer id="io.github.azevedomedia0"><name>Steven Azevedo</name></developer>
+  <url type="homepage">https://github.com/azevedomedia0/boot.R</url>
+  <url type="bugtracker">https://github.com/azevedomedia0/boot.R/issues</url>
+  <description>
+    <p>boot.R is a small boot manager for UEFI computers. At power-on it scans your drives for installed operating systems and shows them as large, labelled tiles you can pick with the arrow keys, then starts the one you choose.</p>
+    <p>You can set a default system and an auto-boot countdown, rename, hide and reorder entries, and jump to the firmware setup screen. It is a single self-contained file with no dependencies.</p>
+    <p>This package installs the boot manager files and a command, boot-r-install, that copies boot.R to your EFI System Partition and adds it as the first boot entry. Nothing on your system is changed until you run that command. The app is unsigned, so Secure Boot must be turned off.</p>
+  </description>
+  <launchable type="desktop-id">io.bootr.BootR.desktop</launchable>
+  <icon type="stock">boot-r</icon>
+  <categories><category>System</category></categories>
+  <keywords><keyword>boot</keyword><keyword>bootloader</keyword><keyword>UEFI</keyword><keyword>dual boot</keyword></keywords>
+  <provides><binary>boot-r-install</binary></provides>
+  <releases><release version="1.0.0" date="2026-10-13"/></releases>
+  <content_rating type="oars-1.1"/>
+</component>

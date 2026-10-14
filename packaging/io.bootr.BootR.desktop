@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=boot.R
+GenericName=UEFI Boot Manager
+Comment=Install the boot.R graphical boot manager to this computer's EFI partition
+Exec=sudo /usr/sbin/boot-r-install
+Icon=boot-r
+Terminal=true
+Categories=System;Settings;
+Keywords=boot;bootloader;uefi;efi;dual boot;

@@ -1,0 +1,43 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: boot.R
+Source: https://github.com/azevedomedia0/boot.R
+
+Files: *
+Copyright: 2026 Steven Azevedo
+License: GPL-3+
+
+Files: usr/share/boot-r/bootR.efi
+Copyright: 2026 Steven Azevedo
+ Brand logos: Simple Icons contributors (https://simpleicons.org). The logos remain trademarks
+ of their respective owners and are shown only to identify the operating systems they belong to.
+ UI icons: Lucide Contributors and Cole Bemis (Feather).
+License: GPL-3+ and CC0-1.0 and ISC
+ Simple Icons is released under CC0-1.0:
+ https://creativecommons.org/publicdomain/zero/1.0/legalcode
+ .
+ Lucide icons: ISC License.
+ Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT).
+ All other copyright (c) for Lucide are held by Lucide Contributors 2022.
+ .
+ Permission to use, copy, modify, and/or distribute this software for any purpose with or
+ without fee is hereby granted, provided that the above copyright notice and this permission
+ notice appear in all copies.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+ SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL
+ THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+ NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+ OF THIS SOFTWARE.
+
+License: GPL-3+
+ This program is free software: you can redistribute it and/or modify it under the terms of the
+ GNU General Public License as published by the Free Software Foundation, either version 3 of
+ the License, or (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
+ the GNU General Public License for more details.
+ .
+ On Debian systems, the complete text of the GNU General Public License version 3 can be found
+ in /usr/share/common-licenses/GPL-3.

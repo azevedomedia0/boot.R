@@ -1,0 +1,37 @@
+name: build
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64 lintian
+      - run: make
+      - run: make image deb
+      - name: Lint the .deb
+        run: lintian --no-tag-display-limit boot-r_*.deb || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: boot.R
+          path: |
+            bootR.efi
+            bootR.img
+            boot-r_*.deb
+  boot-test:
+    needs: build
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64 qemu-system-x86 ovmf imagemagick
+      - run: make image
+      - name: Boot the USB image in QEMU and capture the menu
+        run: |
+          (sleep 40; echo "screendump menu.ppm"; sleep 2; echo quit) | \
+            qemu-system-x86_64 -m 512 -bios /usr/share/ovmf/OVMF.fd -drive file=bootR.img,format=raw \
+              -vga std -display none -monitor stdio
+          convert menu.ppm menu.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: boot-test-screenshot
+          path: menu.png

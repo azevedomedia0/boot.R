@@ -1,0 +1,8 @@
+src/*.o
+assets/*.o
+bootR.efi
+esp/
+dist/
+bootR.img
+*.deb
+.DS_Store
