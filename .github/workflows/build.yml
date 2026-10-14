@@ -52,3 +52,8 @@ jobs:
           flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak --user install -y --noninteractive boot-r.flatpak
           flatpak run --command=sh io.bootr.BootR -c 'file /app/share/boot-r/bootR.efi; ls -l /app/share/boot-r /app/bin; head -c 2 /app/share/boot-r/bootR.efi | od -An -c'
+          flatpak run --command=cat io.bootr.BootR /app/share/boot-r/bootR.efi > bootR-flatpak.efi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bootR-flatpak-efi
+          path: bootR-flatpak.efi

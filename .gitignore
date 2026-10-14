@@ -9,3 +9,4 @@ bootR.img
 build-flatpak/
 .flatpak-builder/
 *.flatpak
+*.sha256
