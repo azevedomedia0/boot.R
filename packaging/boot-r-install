@@ -35,7 +35,10 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-[ "$(id -u)" = 0 ] || die "run as root: sudo boot-r-install"
+if [ "$(id -u)" != 0 ]; then
+  command -v sudo >/dev/null || die "run as root."
+  exec sudo "$0" "$@"
+fi
 [ -d /sys/firmware/efi ] || die "this system was not booted in UEFI mode."
 command -v efibootmgr >/dev/null || die "efibootmgr is not installed."
 

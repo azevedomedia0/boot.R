@@ -58,7 +58,7 @@ Version: {VERSION}
 Architecture: amd64
 Maintainer: {MAINTAINER}
 Installed-Size: {installed_kib}
-Depends: efibootmgr, util-linux
+Depends: efibootmgr
 Section: admin
 Homepage: https://github.com/azevedomedia0/boot.R
 Priority: optional
