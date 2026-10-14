@@ -3,7 +3,7 @@
 boot-r-install \- install the boot.R UEFI boot manager
 .SH SYNOPSIS
 .B boot-r-install
-[\fB\-\-esp\fR \fIMOUNTPOINT\fR] [\fB\-\-uninstall\fR] [\fB\-\-help\fR]
+[\fB\-\-esp\fR \fIMOUNTPOINT\fR] [\fB\-\-uninstall\fR] [\fB\-\-pause\fR] [\fB\-\-help\fR]
 .SH DESCRIPTION
 Copies the boot.R UEFI application to \fIEFI/bootR/\fR on the EFI System Partition and registers it with
 \fBefibootmgr\fR(8) as the first boot entry. Existing boot entries are not modified. Installing the package
@@ -12,6 +12,9 @@ alone does not change the firmware; this command does.
 .TP
 .B \-\-esp \fIMOUNTPOINT\fR
 Use this mounted EFI System Partition instead of detecting one at /boot/efi, /efi or /boot.
+.TP
+.B \-\-pause
+Wait for Enter before exiting, so a terminal opened by the desktop launcher stays visible.
 .TP
 .B \-\-uninstall
 Delete the "boot.R" boot entry and the \fIEFI/bootR/\fR directory.

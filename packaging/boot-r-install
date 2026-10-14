@@ -10,13 +10,15 @@ LABEL="boot.R"
 DIR_NAME="bootR"
 mode=install
 esp=""
+pause=0
 
 usage() {
   cat <<USAGE
-Usage: boot-r-install [--esp MOUNTPOINT] [--uninstall] [--help]
+Usage: boot-r-install [--esp MOUNTPOINT] [--uninstall] [--pause] [--help]
 
   (no options)   copy boot.R to <ESP>/EFI/$DIR_NAME/ and add it as the first UEFI boot entry
   --esp PATH     use this mounted EFI System Partition instead of auto-detecting it
+  --pause        wait for Enter before exiting (used by the desktop launcher)
   --uninstall    delete the '$LABEL' boot entry and <ESP>/EFI/$DIR_NAME/
 
 Needs root, a system booted in UEFI mode, and efibootmgr. Secure Boot must be off: boot.R is unsigned.
@@ -25,9 +27,13 @@ USAGE
 
 die() { echo "boot-r-install: $*" >&2; exit 1; }
 
+wait_for_enter() { [ "$pause" = 1 ] && { echo; read -r -p "Press Enter to close. " _ || true; }; return 0; }
+trap wait_for_enter EXIT
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --uninstall) mode=uninstall ;;
+    --pause) pause=1 ;;
     --esp) shift; [ $# -gt 0 ] || die "--esp needs a path"; esp="$1" ;;
     -h|--help) usage; exit 0 ;;
     *) usage >&2; exit 2 ;;
