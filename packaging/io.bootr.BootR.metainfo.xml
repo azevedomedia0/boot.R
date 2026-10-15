@@ -18,6 +18,11 @@
   <categories><category>System</category></categories>
   <keywords><keyword>boot</keyword><keyword>bootloader</keyword><keyword>UEFI</keyword><keyword>dual boot</keyword></keywords>
   <provides><binary>boot-r-install</binary></provides>
-  <releases><release version="1.0.0" date="2026-10-13"/></releases>
+  <releases>
+    <release version="1.1.0" date="2026-10-15">
+      <description><p>Adds a self-hosted Flatpak that runs the installer on the host.</p></description>
+    </release>
+    <release version="1.0.0" date="2026-10-13"/>
+  </releases>
   <content_rating type="oars-1.1"/>
 </component>
