@@ -19,6 +19,7 @@ make                                        # -> bootR.efi (about 1 MB, no depen
 make image                                  # -> bootR.img, a 64 MiB USB-ready disk image (GPT + FAT32 ESP)
 make dist                                   # -> dist/EFI/BOOT/BOOTX64.EFI, to copy onto an existing FAT32 stick
 make deb                                    # -> boot-r_1.0.0_amd64.deb (Debian/Ubuntu package)
+make flatpak                                # builds and installs the Flatpak (Linux, needs flatpak-builder)
 make demo                                   # run in QEMU + OVMF with fake systems (needs qemu)
 ```
 ## Write the USB image
@@ -32,6 +33,8 @@ Or use balenaEtcher / Raspberry Pi Imager and choose `bootR.img`. Then pick the 
 
 ## Install
 **Debian / Ubuntu:** `sudo apt install ./boot-r_1.0.0_amd64.deb`, turn Secure Boot off, then `sudo boot-r-install`. Installing the package changes nothing on its own; the command adds boot.R to your EFI partition. `sudo boot-r-install --uninstall` removes it, and so does removing the package.
+
+**Flatpak (self-hosted):** download `boot-r.flatpak` from the latest [CI run](https://github.com/azevedomedia0/boot.R/actions/workflows/build.yml) (artifact `boot-r-x86_64.flatpak`), then `flatpak install --user ./boot-r.flatpak` and open boot.R from the app menu. A sandbox cannot write to the EFI partition, so it asks the host to run the installer through `flatpak-spawn --host` and `pkexec`. That needs the `org.freedesktop.Flatpak` permission (Flathub does not accept it), plus `efibootmgr` and polkit on the host. The host handoff is untested; the build and install of the bundle are tested in CI. Build it yourself with `make flatpak`.
 
 **From a source checkout:**
 ```
