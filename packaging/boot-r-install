@@ -55,7 +55,7 @@ fi
 [ -d "$esp" ] || die "$esp is not a directory."
 
 # Boot entries we created earlier (Boot0003, Boot000A, ...)
-entries() { efibootmgr | sed -n "s/^Boot\([0-9A-Fa-f]\{4\}\)\*\{0,1\} $LABEL\$/\1/p"; }
+entries() { efibootmgr | sed -n "s/^Boot\([0-9A-Fa-f]\{4\}\)\*\{0,1\} $LABEL\(\t.*\)\{0,1\}\$/\1/p"; }
 
 if [ "$mode" = uninstall ]; then
   for n in $(entries); do efibootmgr --delete-bootnum --bootnum "$n" >/dev/null; echo "Removed boot entry Boot$n."; done
