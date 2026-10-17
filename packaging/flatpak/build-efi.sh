@@ -6,7 +6,7 @@ set -eu
 CFLAGS="--target=x86_64-pc-windows-msvc -std=gnu11 -O2 -Wall -ffreestanding -fshort-wchar -fno-stack-protector \
   -mno-red-zone -mno-stack-arg-probe -fno-builtin -fno-asynchronous-unwind-tables -fno-unwind-tables"
 objs=""
-for f in main gfx store assets icon rt; do
+for f in main gfx store mouse hid i2chid assets logos2 icon rt; do
   clang $CFLAGS -c "src/$f.c" -o "src/$f.o"
   objs="$objs src/$f.o"
 done

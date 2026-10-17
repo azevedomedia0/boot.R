@@ -9,7 +9,7 @@ CFLAGS  := -std=gnu11 -O2 -Wall -ffreestanding -fshort-wchar -fno-stack-protecto
            -mno-red-zone -fno-builtin -fno-tree-loop-distribute-patterns -fno-asynchronous-unwind-tables -fno-ident
 LDFLAGS := -nostdlib -Wl,--subsystem,10 -Wl,-e,efi_main -Wl,--image-base,0x100000 -Wl,--file-alignment,512 \
            -Wl,--section-alignment,4096 -Wl,--gc-sections -Wl,--no-insert-timestamp -s
-OBJS    := src/main.o src/gfx.o src/store.o src/assets.o src/icon.o src/rt.o assets/bootR.res.o
+OBJS    := src/main.o src/gfx.o src/store.o src/mouse.o src/hid.o src/i2chid.o src/assets.o src/logos2.o src/icon.o src/rt.o assets/bootR.res.o
 WINDRES ?= $(subst gcc,windres,$(CC))
 # For `make demo` (needs qemu-system-x86_64 and an x86_64 UEFI firmware image)
 QEMU    ?= qemu-system-x86_64

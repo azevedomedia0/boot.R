@@ -39,7 +39,80 @@ EFI_STATUS gfx_init(void) {
   return EFI_SUCCESS;
 }
 
+/* Mouse pointer: an arrow sprite composited over the back buffer and blitted on its own, so moving it
+ * does not redraw the screen. gfx_flush puts it back after each full redraw. */
+#define CUR_W 12
+#define CUR_H 19
+static const char *cur_art[CUR_H] = {
+  "X           ", "XX          ", "X.X         ", "X..X        ", "X...X       ", "X....X      ",
+  "X.....X     ", "X......X    ", "X.......X   ", "X........X  ", "X.....XXXXX ", "X..X..X     ",
+  "X.X X..X    ", "XX  X..X    ", "X    X..X   ", "     X..X   ", "      X..X  ", "      X..X  ",
+  "       XX   " };
+static UINT32 cur_save[CUR_W * 2 * CUR_H * 2];
+static INTN cur_x, cur_y; static int cur_vis;
+
+/* The sprite sits at the pointer, nudged inward at the right and bottom edges so it never gets clipped away. */
+static void cur_rect(INTN *x, INTN *y, INTN *w, INTN *h) {
+  INTN s = SH >= 1400 ? 2 : 1;
+  *w = CUR_W * s; *h = CUR_H * s; *x = cur_x; *y = cur_y;
+  if (*x > SW - *w) *x = SW - *w;
+  if (*y > SH - *h) *y = SH - *h;
+  if (*x < 0) *x = 0;
+  if (*y < 0) *y = 0;
+}
+
+/* Keeps the pixels under the sprite in cur_save, so moving it is just: put them back, save, draw. */
+static void cur_under(INTN x, INTN y, INTN w, INTN h, int restore) {
+  INTN i, j;
+  for (j = 0; j < h; j++) for (i = 0; i < w; i++) {
+    if (restore) bb[(y + j) * SW + x + i] = cur_save[j * w + i];
+    else cur_save[j * w + i] = bb[(y + j) * SW + x + i];
+  }
+}
+
+static void cur_draw(INTN x, INTN y, INTN w, INTN h) {
+  INTN s = w / CUR_W, i, j;
+  for (j = 0; j < h; j++) for (i = 0; i < w; i++) {
+    char a = cur_art[j / s][i / s];
+    if (a == 'X') bb[(y + j) * SW + x + i] = 0x000000; else if (a == '.') bb[(y + j) * SW + x + i] = 0xffffff;
+  }
+}
+
+/* Sends just this rectangle of the back buffer to the screen, the same call gfx_flush makes for the whole of it. */
+static void cur_present(INTN x, INTN y, INTN w, INTN h) {
+  uefi_call_wrapper(gop->Blt, 10, gop, (EFI_GRAPHICS_OUTPUT_BLT_PIXEL *)bb, EfiBltBufferToVideo,
+                    (UINTN)x, (UINTN)y, (UINTN)x, (UINTN)y, (UINTN)w, (UINTN)h, (UINTN)SW * 4);
+}
+
+static void cur_erase(void) {
+  INTN x, y, w, h;
+  cur_rect(&x, &y, &w, &h);
+  cur_under(x, y, w, h, 1);
+  cur_present(x, y, w, h);
+}
+
+void gfx_cursor_move(INTN x, INTN y) {
+  INTN rx, ry, w, h;
+  if (cur_vis) cur_erase();
+  cur_x = x; cur_y = y; cur_vis = 1;
+  cur_rect(&rx, &ry, &w, &h);
+  cur_under(rx, ry, w, h, 0);
+  cur_draw(rx, ry, w, h);
+  cur_present(rx, ry, w, h);
+}
+
+void gfx_cursor_hide(void) {
+  if (cur_vis) cur_erase();
+  cur_vis = 0;
+}
+
 void gfx_flush(void) {
+  if (cur_vis) {
+    INTN x, y, w, h;
+    cur_rect(&x, &y, &w, &h);
+    cur_under(x, y, w, h, 0);
+    cur_draw(x, y, w, h);
+  }
   uefi_call_wrapper(gop->Blt, 10, gop, (EFI_GRAPHICS_OUTPUT_BLT_PIXEL *)bb, EfiBltBufferToVideo,
                     (UINTN)0, (UINTN)0, (UINTN)0, (UINTN)0, (UINTN)SW, (UINTN)SH, (UINTN)0);
 }
@@ -90,13 +163,20 @@ void fill_rrect(INTN x, INTN y, INTN w, INTN h, INTN r, UINT32 c) {
   }
 }
 
+/* At scale 2 use the font's own 2x glyphs when it has them, rather than doubling the 1x pixels. */
+static const Font *pick(const Font *f, INTN *sc) {
+  if (*sc == 2 && f->hi) { *sc = 1; return f->hi; }
+  return f;
+}
 INTN text_w(const Font *f, const char *s, INTN sc) {
   INTN w = 0;
+  f = pick(f, &sc);
   for (; *s; s++) { int ch = (unsigned char)*s; if (ch < 32 || ch > 126) ch = '?'; w += f->adv[ch - 32] * sc; }
   return w;
 }
 
 void draw_text(const Font *f, INTN x, INTN y, const char *s, UINT32 c, INTN sc) {
+  f = pick(f, &sc);
   for (; *s; s++) {
     int ch = (unsigned char)*s; INTN gi, gx, gy, sx, sy; const UINT8 *g;
     if (ch < 32 || ch > 126) ch = '?';
@@ -112,21 +192,22 @@ void draw_text(const Font *f, INTN x, INTN y, const char *s, UINT32 c, INTN sc) 
 
 static INTN cl(INTN v, INTN n) { return v < 0 ? 0 : v >= n ? n - 1 : v; }
 
-void draw_mask(int icon, INTN x, INTN y, INTN size, UINT32 c) {
-  const UINT8 *m = masks[icon]; INTN i, j;
+/* Draws an n x n alpha mask in colour c at size x size, bilinearly resampled. */
+void draw_alpha(const UINT8 *m, INTN n, INTN x, INTN y, INTN size, UINT32 c) {
+  INTN i, j;
   for (j = 0; j < size; j++) {
-    INTN fy = ((2 * j + 1) * 48 * 128) / size - 128, y0 = fy >> 8, ty = fy & 255;
-    INTN ya = cl(y0, 48), yb = cl(y0 + 1, 48);
+    INTN fy = ((2 * j + 1) * n * 128) / size - 128, y0 = fy >> 8, ty = fy & 255;
+    INTN ya = cl(y0, n), yb = cl(y0 + 1, n);
     for (i = 0; i < size; i++) {
-      INTN fx = ((2 * i + 1) * 48 * 128) / size - 128, x0 = fx >> 8, tx = fx & 255;
-      INTN xa = cl(x0, 48), xb = cl(x0 + 1, 48);
-      INTN a = (m[ya * 48 + xa] * (256 - tx) * (256 - ty) + m[ya * 48 + xb] * tx * (256 - ty) +
-                m[yb * 48 + xa] * (256 - tx) * ty + m[yb * 48 + xb] * tx * ty) >> 16;
+      INTN fx = ((2 * i + 1) * n * 128) / size - 128, x0 = fx >> 8, tx = fx & 255;
+      INTN xa = cl(x0, n), xb = cl(x0 + 1, n);
+      INTN a = (m[ya * n + xa] * (256 - tx) * (256 - ty) + m[ya * n + xb] * tx * (256 - ty) +
+                m[yb * n + xa] * (256 - tx) * ty + m[yb * n + xb] * tx * ty) >> 16;
       px(x + i, y + j, c, (UINT32)a);
     }
   }
 }
-
+void draw_mask(int icon, INTN x, INTN y, INTN size, UINT32 c) { draw_alpha(masks[icon], 48, x, y, size, c); }
 static void tex(UINT32 t, INTN *o) {
   INTN a = t >> 24;
   o[0] = a; o[1] = (((t >> 16) & 255) * a) / 255; o[2] = (((t >> 8) & 255) * a) / 255; o[3] = ((t & 255) * a) / 255;
@@ -157,5 +238,9 @@ void draw_image(const UINT32 *m, INTN n, INTN x, INTN y, INTN size) {
   }
 }
 
-void draw_logo(int idx, INTN x, INTN y, INTN size) { draw_image(logos[idx], 64, x, y, size); }
+/* Past 64 px the 64x64 logos would be stretched and soft, so use the 128x128 masks (see tools/mklogos.py). */
+void draw_logo(int idx, INTN x, INTN y, INTN size) {
+  if (size > 64) draw_alpha(logos_hi[idx], 128, x, y, size, logo_col[idx]);
+  else draw_image(logos[idx], 64, x, y, size);
+}
 void draw_icon(INTN x, INTN y, INTN size) { draw_image(icon_bootr, 128, x, y, size); }

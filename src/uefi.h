@@ -9,7 +9,7 @@
 #include <stddef.h>
 
 typedef uint8_t  UINT8;  typedef uint16_t UINT16; typedef uint32_t UINT32; typedef uint64_t UINT64;
-typedef int16_t  INT16;  typedef int64_t  INTN;    typedef uint64_t UINTN;
+typedef int8_t   INT8;   typedef int16_t  INT16;  typedef int32_t INT32; typedef int64_t  INTN;    typedef uint64_t UINTN;
 typedef uint16_t CHAR16; typedef uint8_t  BOOLEAN;
 typedef UINTN EFI_STATUS; typedef void *EFI_HANDLE; typedef void *EFI_EVENT;
 typedef UINT64 EFI_PHYSICAL_ADDRESS;
@@ -78,7 +78,8 @@ typedef struct {
   void *Exit, *UnloadImage, *ExitBootServices, *GetNextMonotonicCount;
   EFI_STATUS (*Stall)(UINTN);
   EFI_STATUS (*SetWatchdogTimer)(UINTN, UINT64, UINTN, CHAR16 *);
-  void *ConnectController, *DisconnectController, *OpenProtocol, *CloseProtocol, *OpenProtocolInformation;
+  EFI_STATUS (*ConnectController)(EFI_HANDLE, EFI_HANDLE *, EFI_DEVICE_PATH *, BOOLEAN);
+  void *DisconnectController, *OpenProtocol, *CloseProtocol, *OpenProtocolInformation;
   void *ProtocolsPerHandle;
   EFI_STATUS (*LocateHandleBuffer)(EFI_LOCATE_SEARCH_TYPE, EFI_GUID *, void *, UINTN *, EFI_HANDLE **);
   EFI_STATUS (*LocateProtocol)(EFI_GUID *, void *, void **);
@@ -154,7 +155,44 @@ typedef struct {
   EFI_DEVICE_PATH *FilePath; void *Reserved; UINT32 LoadOptionsSize; void *LoadOptions;
 } EFI_LOADED_IMAGE;
 
+/* ---- pointers ---- */
+typedef struct { INT32 RelativeMovementX, RelativeMovementY, RelativeMovementZ; BOOLEAN LeftButton, RightButton; } EFI_SIMPLE_POINTER_STATE;
+typedef struct EFI_SIMPLE_POINTER EFI_SIMPLE_POINTER;
+struct EFI_SIMPLE_POINTER {
+  EFI_STATUS (*Reset)(EFI_SIMPLE_POINTER *, BOOLEAN);
+  EFI_STATUS (*GetState)(EFI_SIMPLE_POINTER *, EFI_SIMPLE_POINTER_STATE *);
+  EFI_EVENT WaitForInput;
+  void *Mode;
+};
+typedef struct { UINT64 CurrentX, CurrentY, CurrentZ; UINT32 ActiveButtons; } EFI_ABSOLUTE_POINTER_STATE;
+typedef struct { UINT64 AbsoluteMinX, AbsoluteMinY, AbsoluteMinZ, AbsoluteMaxX, AbsoluteMaxY, AbsoluteMaxZ; UINT32 Attributes; } EFI_ABSOLUTE_POINTER_MODE;
+typedef struct EFI_ABSOLUTE_POINTER EFI_ABSOLUTE_POINTER;
+struct EFI_ABSOLUTE_POINTER {
+  EFI_STATUS (*Reset)(EFI_ABSOLUTE_POINTER *, BOOLEAN);
+  EFI_STATUS (*GetState)(EFI_ABSOLUTE_POINTER *, EFI_ABSOLUTE_POINTER_STATE *);
+  EFI_EVENT WaitForInput;
+  EFI_ABSOLUTE_POINTER_MODE *Mode;
+};
+
+/* ---- PCI I/O (only config-space access is used) ---- */
+typedef struct EFI_PCI_IO EFI_PCI_IO;
+struct EFI_PCI_IO {
+  void *PollMem, *PollIo;
+  struct { void *Read, *Write; } Mem, Io;
+  struct {
+    EFI_STATUS (*Read)(EFI_PCI_IO *, UINT32 Width, UINT32 Offset, UINTN Count, void *Buffer);
+    EFI_STATUS (*Write)(EFI_PCI_IO *, UINT32 Width, UINT32 Offset, UINTN Count, void *Buffer);
+  } Pci;
+  void *CopyMem, *Map, *Unmap, *AllocateBuffer, *FreeBuffer, *Flush;
+  EFI_STATUS (*GetLocation)(EFI_PCI_IO *, UINTN *Seg, UINTN *Bus, UINTN *Dev, UINTN *Fn);
+  void *Attributes, *GetBarAttributes, *SetBarAttributes;
+  UINT64 RomSize; void *RomImage;
+};
+#define EFI_PCI_IO_PROTOCOL_GUID {0x4cf5b200, 0x68b8, 0x4ca5, {0x9e, 0xec, 0xb2, 0x3e, 0x3f, 0x50, 0x02, 0x9a}}
+
 /* ---- GUIDs ---- */
+#define EFI_SIMPLE_POINTER_PROTOCOL_GUID   {0x31878c87, 0x0b75, 0x11d5, {0x9a, 0x4f, 0x00, 0x90, 0x27, 0x3f, 0xc1, 0x4d}}
+#define EFI_ABSOLUTE_POINTER_PROTOCOL_GUID {0x8d59d32b, 0xc655, 0x4ae9, {0x9b, 0x15, 0xf2, 0x59, 0x04, 0x99, 0x2a, 0x43}}
 #define EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID {0x9042a9de, 0x23dc, 0x4a38, {0x96, 0xfb, 0x7a, 0xde, 0xd0, 0x80, 0x51, 0x6a}}
 #define SIMPLE_FILE_SYSTEM_PROTOCOL       {0x964e5b22, 0x6459, 0x11d2, {0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b}}
 #define LOADED_IMAGE_PROTOCOL             {0x5b1b31a1, 0x9562, 0x11d2, {0x8e, 0x3f, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b}}
