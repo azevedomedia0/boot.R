@@ -19,6 +19,9 @@
   <keywords><keyword>boot</keyword><keyword>bootloader</keyword><keyword>UEFI</keyword><keyword>dual boot</keyword></keywords>
   <provides><binary>boot-r-install</binary></provides>
   <releases>
+    <release version="1.3.0" date="2026-10-16">
+      <description><p>Adds mouse and trackpad support, including Synaptics I2C trackpads (tap to click and two-finger scroll), and a scroll bar in Settings. Text and distro logos are sharper on 4K and high-DPI screens, and booting a system no longer shows the splash screen first.</p></description>
+    </release>
     <release version="1.2.1" date="2026-10-16">
       <description><p>Fixes a kernel panic when booting an EFI-stub kernel such as Pop!_OS: boot.R now passes the kernel command line and initramfs from the system's boot entries.</p></description>
     </release>
