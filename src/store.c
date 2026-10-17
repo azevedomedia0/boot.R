@@ -79,6 +79,48 @@ static const struct { const char *n, *label; INTN icon; } dtab[] = {
 };
 static const CHAR16 *cands[] = { L"shimx64.efi", L"grubx64.efi", L"Boot\\bootmgfw.efi", L"systemd-bootx64.efi",
                                  L"bootx64.efi", L"refind_x64.efi", L"OpenCore.efi", L"loader.efi", L"elilo.efi" };
+static const char *skip_efi[] = { "mmx64.efi", "fbx64.efi", "fwupx64.efi", "fwupia32.efi", "fallback.efi" };
+
+static void classify(const char *low, const char *raw, char *key, const char **label, INTN *icon) {
+  INTN q;
+  *label = raw; *icon = -1;
+  scpy(key, low, 24);
+  if (low[0] == 'p' && low[1] == 'o' && low[2] == 'p') { *label = "Pop!_OS"; *icon = 3; scpy(key, "pop", 24); }
+  else if (seq(low, "oc")) { *label = "macOS"; *icon = 4; scpy(key, "macos", 24); }
+  else
+    for (q = 0; q < (INTN)(sizeof(dtab) / sizeof(dtab[0])); q++)
+      if (has(low, dtab[q].n)) { *label = dtab[q].label; *icon = dtab[q].icon; scpy(key, dtab[q].n, 24); break; }
+}
+
+/* Some distros (e.g. Pop!_OS's kernelstub) boot the kernel's EFI stub directly, with no
+ * grub/shim/systemd-boot in sight. If none of the known loader names matched, take any other
+ * .efi file in the directory, skipping shim's own helper binaries. A directory can hold more
+ * than one, e.g. a normal kernel plus a recovery one (Pop!_OS) or several generations (NixOS);
+ * prefer one that doesn't look like a recovery/rescue kernel, so that isn't what boots by default. */
+static int any_efi(EFI_FILE_HANDLE root, const CHAR16 *dname, CHAR16 *out) {
+  EFI_FILE_HANDLE dir; CHAR16 dpath[140], fallback[160]; UINT64 buf[64]; int have_fallback = 0;
+  StrCpy(dpath, L"\\EFI\\"); StrCat(dpath, dname);
+  if (EFI_ERROR(uefi_call_wrapper(root->Open, 5, root, &dir, dpath, EFI_FILE_MODE_READ, (UINT64)0))) return 0;
+  for (;;) {
+    UINTN sz = sizeof(buf); EFI_FILE_INFO *fi = (EFI_FILE_INFO *)buf;
+    char low[32]; INTN q; int bad = 0;
+    if (EFI_ERROR(uefi_call_wrapper(dir->Read, 3, dir, &sz, buf)) || sz == 0) break;
+    if ((fi->Attribute & EFI_FILE_DIRECTORY) || StrLen(fi->FileName) > 100) continue;
+    narrow(fi->FileName, low, 32, 1);
+    if (!has(low, ".efi")) continue;
+    for (q = 0; q < (INTN)(sizeof(skip_efi) / sizeof(skip_efi[0])); q++) if (seq(low, skip_efi[q])) { bad = 1; break; }
+    if (bad) continue;
+    if (!have_fallback) { StrCpy(fallback, dpath); StrCat(fallback, L"\\"); StrCat(fallback, fi->FileName); have_fallback = 1; }
+    if (!has(low, "recovery") && !has(low, "rescue")) {
+      StrCpy(out, dpath); StrCat(out, L"\\"); StrCat(out, fi->FileName);
+      uefi_call_wrapper(dir->Close, 1, dir);
+      return 1;
+    }
+  }
+  uefi_call_wrapper(dir->Close, 1, dir);
+  if (have_fallback) { StrCpy(out, fallback); return 1; }
+  return 0;
+}
 
 static void scan_vol(EFI_HANDLE h, INTN idx, int isself) {
   EFI_FILE_IO_INTERFACE *fs; EFI_FILE_HANDLE root, dir; INTN found = 0;
@@ -97,19 +139,18 @@ static void scan_vol(EFI_HANDLE h, INTN idx, int isself) {
       for (k = 0; k < 9; k++) {
         StrCpy(path, L"\\EFI\\"); StrCat(path, fi->FileName); StrCat(path, L"\\"); StrCat(path, (CHAR16 *)cands[k]);
         if (exists(root, path)) {
-          const char *label = raw; INTN icon = -1;
-          scpy(key, low, 24);
-          if (low[0] == 'p' && low[1] == 'o' && low[2] == 'p') { label = "Pop!_OS"; icon = 3; scpy(key, "pop", 24); }
-          else if (seq(low, "oc")) { label = "macOS"; icon = 4; scpy(key, "macos", 24); }
-          else {
-            INTN q;
-            for (q = 0; q < (INTN)(sizeof(dtab) / sizeof(dtab[0])); q++)
-              if (has(low, dtab[q].n)) { label = dtab[q].label; icon = dtab[q].icon; scpy(key, dtab[q].n, 24); break; }
-          }
+          const char *label; INTN icon;
+          classify(low, raw, key, &label, &icon);
           add_entry(key, label, icon, 0, h, path);
           found++;
           break;
         }
+      }
+      if (k == 9 && any_efi(root, fi->FileName, path)) {
+        const char *label; INTN icon;
+        classify(low, raw, key, &label, &icon);
+        add_entry(key, label, icon, 0, h, path);
+        found++;
       }
     }
     uefi_call_wrapper(dir->Close, 1, dir);

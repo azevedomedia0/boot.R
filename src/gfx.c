@@ -28,7 +28,6 @@ EFI_STATUS gfx_init(void) {
     if (EFI_ERROR(uefi_call_wrapper(gop->QueryMode, 4, gop, i, &sz, &inf))) continue;
     w = inf->HorizontalResolution; h = inf->VerticalResolution;
     FreePool(inf);
-    if (w > 2560 || h > 1440) continue;
     if ((UINT64)w * h > (UINT64)bw * bh) { bw = w; bh = h; best = i; }
   }
   if (bw && best != gop->Mode->Mode) uefi_call_wrapper(gop->SetMode, 2, gop, best);
