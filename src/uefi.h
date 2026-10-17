@@ -151,6 +151,7 @@ struct EFI_FILE_IO_INTERFACE { UINT64 Revision; EFI_STATUS (*OpenVolume)(EFI_FIL
 
 typedef struct {
   UINT32 Revision; EFI_HANDLE ParentHandle; EFI_SYSTEM_TABLE *SystemTable; EFI_HANDLE DeviceHandle;
+  EFI_DEVICE_PATH *FilePath; void *Reserved; UINT32 LoadOptionsSize; void *LoadOptions;
 } EFI_LOADED_IMAGE;
 
 /* ---- GUIDs ---- */

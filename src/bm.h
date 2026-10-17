@@ -6,6 +6,7 @@
 
 #define APP_NAME "boot.R"
 #define MAXE 24
+#define OPTS_MAX 480
 #define C_BG    0x1b1b1b
 #define C_PANEL 0x353b41
 #define C_TILE  0x3f464d
@@ -24,7 +25,7 @@ enum { I_LEFT, I_RIGHT, I_UP, I_DOWN, I_BACK, I_REFRESH, I_SETTINGS, I_PENCIL, I
 
 typedef struct { char key[24]; char name[32]; UINT8 hidden, pad[3]; } SEnt;
 typedef struct { UINT32 magic, timer, hide_hints; char def[24]; UINT32 n; SEnt e[MAXE]; } Settings;
-typedef struct { char key[24]; char label[32]; INTN icon, kind; EFI_HANDLE dev; CHAR16 path[160]; } Entry;
+typedef struct { char key[24]; char label[32]; INTN icon, kind; EFI_HANDLE dev; CHAR16 path[160]; CHAR16 opts[OPTS_MAX]; } Entry;
 typedef struct { INTN ent, sidx; } VRow;
 
 extern Settings cfg;

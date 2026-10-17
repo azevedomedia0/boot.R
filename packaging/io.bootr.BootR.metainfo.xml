@@ -19,6 +19,9 @@
   <keywords><keyword>boot</keyword><keyword>bootloader</keyword><keyword>UEFI</keyword><keyword>dual boot</keyword></keywords>
   <provides><binary>boot-r-install</binary></provides>
   <releases>
+    <release version="1.2.1" date="2026-10-16">
+      <description><p>Fixes a kernel panic when booting an EFI-stub kernel such as Pop!_OS: boot.R now passes the kernel command line and initramfs from the system's boot entries.</p></description>
+    </release>
     <release version="1.2.0" date="2026-10-16">
       <description><p>Finds EFI-stub kernels (such as Pop!_OS via kernelstub) that have no separate loader file, and uses the display's native resolution on 4K and 5K screens. Adds a one-step Flatpak install script.</p></description>
     </release>

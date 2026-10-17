@@ -282,6 +282,12 @@ static void boot(EFI_HANDLE image, VRow v) {
       gfx_flush(); uefi_call_wrapper(BS->Stall, 1, (UINTN)2000000);
       return;
     }
+    if (e->opts[0]) {
+      EFI_GUID lig = LOADED_IMAGE_PROTOCOL; EFI_LOADED_IMAGE *li = NULL;
+      if (!EFI_ERROR(uefi_call_wrapper(BS->HandleProtocol, 3, h, &lig, (void **)&li)) && li) {
+        li->LoadOptions = e->opts; li->LoadOptionsSize = (UINT32)((StrLen(e->opts) + 1) * 2);
+      }
+    }
     draw_boot(name, 100);
     uefi_call_wrapper(BS->StartImage, 3, h, &xs, NULL);
   }
